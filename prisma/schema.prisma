@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Listing {
+  id              String         @id @default(cuid())
+
+  // 주소 (전체 저장, 공개는 마스킹)
+  addressFull     String         // 전체 주소 (관리자만)
+  addressMasked   String         // 읍면동까지만 (공개)
+
+  // 면적
+  totalAreaSqm    Float?         // 총면적 (㎡)
+  totalAreaPyeong Float?         // 총면적 (평)
+  rentAreaSqm     Float?         // 임대면적 (㎡)
+  rentAreaPyeong  Float?         // 임대면적 (평)
+
+  // 임대조건
+  monthlyRent     Int?           // 월임대료 (만원)
+  deposit         Int?           // 보증금 (만원)
+  maintenanceFee  Int?           // 관리비 (만원)
+  availableFrom   DateTime?      // 입주가능일
+
+  // 시설 정보
+  facilityType    FacilityType   @default(WAREHOUSE)
+  ceilingHeight   Float?         // 천고 (m)
+  floorLoad       Float?         // 바닥하중 (t/㎡)
+  hasDock         Boolean        @default(false)   // 도크 유무
+  hasOffice       Boolean        @default(false)   // 사무실 포함
+  hasCCTV         Boolean        @default(false)
+  hasParking      Boolean        @default(false)
+
+  // 상태
+  status          ListingStatus  @default(DRAFT)
+  hasWatermark    Boolean        @default(false)   // 워터마크 감지 플래그
+
+  // OCR 원본 데이터 (JSON)
+  ocrRawData      Json?
+
+  // 메타
+  description     String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  images          ListingImage[]
+  inquiries       Inquiry[]
+}
+
+model ListingImage {
+  id           String   @id @default(cuid())
+  listingId    String
+  listing      Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  cloudinaryId String
+  url          String
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+}
+
+model Inquiry {
+  id          String    @id @default(cuid())
+  listingId   String?
+  listing     Listing?  @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  companyName String
+  contactName String
+  phone       String
+  email       String
+  message     String?
+
+  createdAt   DateTime  @default(now())
+}
+
+model NewsPost {
+  id          String       @id @default(cuid())
+  title       String
+  slug        String       @unique
+  content     String
+  excerpt     String?
+  source      NewsSource   @default(MANUAL)
+  sourceUrl   String?      @unique
+  publishedAt DateTime     @default(now())
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model NewsletterSubscriber {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+enum FacilityType {
+  WAREHOUSE    // 창고
+  LOGISTICS    // 물류센터
+  COLD_CHAIN   // 냉장/냉동
+  FULFILLMENT  // 풀필먼트
+  FACTORY      // 공장
+}
+
+enum ListingStatus {
+  DRAFT        // 임시저장
+  PUBLISHED    // 공개
+  ARCHIVED     // 숨김
+}
+
+enum NewsSource {
+  MANUAL       // 직접 작성
+  RSS          // RSS 자동 수집
+}
