@@ -1,6 +1,5 @@
-import { auth } from '@/auth'
+import { requireAuth } from '@/proxy'
 import { signOut } from '@/auth'
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
 async function LogoutButton() {
@@ -21,20 +20,15 @@ async function LogoutButton() {
   )
 }
 
-export default async function AdminLayout({
+export default async function ProtectedAdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const session = await auth()
-
-  if (!session) {
-    redirect('/admin/login')
-  }
+  await requireAuth()
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* 사이드바 */}
       <aside className="w-64 bg-gray-900 text-white flex flex-col shrink-0">
         <div className="px-6 py-5 border-b border-gray-700">
           <Link href="/admin/listings" className="text-xl font-bold text-white">
@@ -66,7 +60,6 @@ export default async function AdminLayout({
         </div>
       </aside>
 
-      {/* 메인 콘텐츠 */}
       <main className="flex-1 overflow-auto">
         {children}
       </main>
